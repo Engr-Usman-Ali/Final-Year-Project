@@ -1,0 +1,23 @@
+{
+  "train_accuracy": 0.999,
+  "test_accuracy": 0.999,
+  "cv_mean_accuracy": 0.9978,
+  "cv_std_accuracy": 0.0007483314773547889,
+  "n_features": 10,
+  "feature_names": [
+    "pH",
+    "TDS",
+    "Turbidity",
+    "MP_Count",
+    "pH_deviation",
+    "TDS_normalized",
+    "pollution_index",
+    "Turbidity_MP_interaction",
+    "pH_boundary_risk",
+    "TDS_boundary_risk"
+  ],
+  "n_estimators": 200,
+  "max_depth": 10,
+  "training_samples": 4000,
+  "test_samples": 1000
+}
