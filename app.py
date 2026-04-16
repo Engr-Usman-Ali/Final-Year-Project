@@ -11,17 +11,30 @@ import pandas as pd
 import joblib
 import os
 
+# =====================================================
+# LOAD ML MODEL
+# =====================================================
+
+MODEL_PATH = "models/risk_model.pkl"
+
+ml_model = None
+
+if os.path.exists(MODEL_PATH):
+    ml_model = joblib.load(MODEL_PATH)
+    st.sidebar.success("✅ ML Model Loaded Successfully")
+else:
+    st.sidebar.error("❌ Model file not found (risk_model.pkl)")
+    
 
 # =====================================================
-# HELPER FUNCTIONS
+# Paramters
 # =====================================================
 
 def categorize_parameter(value, param):
     """
-    Categorize a single parameter into Good, Moderate, or Poor.
-    Used ONLY for rule-based risk calculation and UI display.
-    NOT used as ML features!
+    Rule-based categorization (WHO/PCRWR standards)
     """
+
     if param == "pH":
         if 7.1 <= value <= 7.8:
             return "Good"
@@ -29,6 +42,7 @@ def categorize_parameter(value, param):
             return "Moderate"
         else:
             return "Poor"
+
     elif param == "TDS":
         if 200 <= value <= 270:
             return "Good"
@@ -36,196 +50,159 @@ def categorize_parameter(value, param):
             return "Moderate"
         else:
             return "Poor"
+
     elif param == "Turbidity":
         if value < 1:
             return "Good"
-        elif 1 <= value <= 4.9:  # Matches SRS: 1.0-4.9 NTU
+        elif 1 <= value <= 4.9:
             return "Moderate"
-        else:  # >= 5
+        else:
             return "Poor"
+
     elif param == "MP_Count":
         if value == 0:
             return "Good"
-        elif 1 <= value <= 5:  # Matches SRS: 1-5 particles
+        elif 1 <= value <= 5:
             return "Moderate"
-        else:  # >= 6
+        else:
             return "Poor"
-
-
-def calculate_engineered_features(pH, TDS, Turbidity, MP_Count):
-    """
-    Calculate engineered features from raw parameters.
-    These are continuous numerical features, NOT categorical flags.
-    """
-    # Feature 1: pH deviation from neutral (7.5)
-    pH_deviation = abs(pH - 7.5)
-    
-    # Feature 2: Normalized TDS
-    TDS_normalized = TDS / 1000.0
-    
-    # Feature 3: Pollution index (composite score)
-    pollution_index = (MP_Count / 10.0) + ((TDS - 200) / 800.0) + (Turbidity / 20.0)
-    
-    # Feature 4: Turbidity-Microplastic interaction
-    Turbidity_MP_interaction = Turbidity * (MP_Count + 1)
-    
-    # Feature 5: pH boundary risk
-    pH_boundary_risk = min(abs(pH - 6.5), abs(pH - 8.5)) / 2.0
-    
-    # Feature 6: TDS boundary risk
-    TDS_boundary_risk = min(abs(TDS - 150), abs(TDS - 350)) / 200.0
-    
-    return {
-        'pH_deviation': pH_deviation,
-        'TDS_normalized': TDS_normalized,
-        'pollution_index': pollution_index,
-        'Turbidity_MP_interaction': Turbidity_MP_interaction,
-        'pH_boundary_risk': pH_boundary_risk,
-        'TDS_boundary_risk': TDS_boundary_risk
-    }
-
-
+ 
 # =====================================================
-# LOAD ML MODEL (ONCE AT STARTUP)
-# =====================================================
-
-@st.cache_resource
-def load_ml_model():
-    """Load ML model and related files (cached for performance)."""
-    try:
-        model = joblib.load("./models/ml_model.pkl")
-        encoder = joblib.load("./models/ml_label_encoder.pkl")
-        features = joblib.load("./models/ml_feature_columns.pkl")
-        return model, encoder, features
-    except Exception as e:
-        st.warning(f"⚠️ ML model not found. Run training script first. Error: {e}")
-        return None, None, None
-
-ml_model, ml_encoder, ml_features = load_ml_model()
-
-
-# =====================================================
-# MAIN ASSESSMENT FUNCTION
-# =====================================================
-
-def get_final_assessment(pH, TDS, Turbidity, MP_Count):
+# ML PREDICTION
+# ===================================================== 
+ 
+def ml_predict(ph, tds, turbidity, mp_count):
     """
-    Get final water quality risk assessment using ML + Rule hybrid approach.
-    
-    Returns:
-        dict: {
-            'final_risk': Final risk level (Low/Medium/High),
-            'ml_risk': ML prediction,
-            'ml_confidence': ML confidence percentage,
-            'override_applied': Whether rule override was applied,
-            'categories': Parameter categorizations
-        }
+    Predict risk using trained ML model
     """
-    
-    # =====================================================
-    # STEP 1: Categorize parameters (for rules & UI only)
-    # =====================================================
-    ph_cat = categorize_parameter(pH, "pH")
-    tds_cat = categorize_parameter(TDS, "TDS")
-    turb_cat = categorize_parameter(Turbidity, "Turbidity")
-    mp_cat = categorize_parameter(MP_Count, "MP_Count")
-    categories = [ph_cat, tds_cat, turb_cat, mp_cat]
 
-    # =====================================================
-    # STEP 2: Rule-based risk calculation
-    # =====================================================
+    if ml_model is None:
+        return "Unknown", 0.0
+
+    # IMPORTANT: must match training features
+    input_data = pd.DataFrame([{
+        "pH": ph,
+        "TDS": tds,
+        "Turbidity": turbidity,
+        "MP_Count": mp_count
+    }])
+
+    prediction = ml_model.predict(input_data)[0]
+
+    # confidence (if model supports probability)
+    if hasattr(ml_model, "predict_proba"):
+        probs = ml_model.predict_proba(input_data)[0]
+        confidence = max(probs) * 100
+    else:
+        confidence = 0.0
+
+    return prediction, confidence
+ 
+# =====================================================
+# RULE BASED HYBRID SYSTEM
+# =====================================================
+ 
+def rule_based_risk(ph, tds, turbidity, mp_count):
+    """
+    Hard safety rules (NO ML can override HIGH risk)
+    """
+
+    pH_cat = categorize_parameter(ph, "pH")
+    tds_cat = categorize_parameter(tds, "TDS")
+    turbidity_cat = categorize_parameter(turbidity, "Turbidity")
+    mp_cat = categorize_parameter(mp_count, "MP_Count")
+
+    categories = [pH_cat, tds_cat, turbidity_cat, mp_cat]
+
+    # RULE 1: ANY poor → HIGH risk
     if "Poor" in categories:
-        rule_risk = "High"
-    elif categories.count("Moderate") >= 2:
-        rule_risk = "Medium"
-    else:
-        rule_risk = "Low"
+        return "High"
+
+    # RULE 2: 2+ moderate → Medium risk
+    if categories.count("Moderate") >= 2:
+        return "Medium"
+
+    # RULE 3: mostly good → Low risk
+    return "Low"
+
+# =====================================================
+# Prediction Function
+# =====================================================
+
+def final_risk_engine(ph, tds, turbidity, mp_count):
+    """
+    Hybrid ML-first system with rule-based safety override.
+
+    LOGIC:
+    1. ML is primary decision maker
+    2. Rule-based system acts ONLY as safety guard
+    3. Override ML ONLY if ML underestimates HIGH risk
+    """
 
     # =====================================================
-    # STEP 3: ML-based risk prediction (RAW VALUES ONLY)
+    # STEP 1: ML PREDICTION (PRIMARY MODEL)
     # =====================================================
-    ml_risk = "Low"
-    ml_confidence = 0.0
-    
-    try:
-        if ml_model and ml_encoder and ml_features:
-            # Calculate engineered features
-            eng_features = calculate_engineered_features(pH, TDS, Turbidity, MP_Count)
-            
-            # Combine raw + engineered features
-            features_dict = {
-                # Raw parameters
-                'pH': pH,
-                'TDS': TDS,
-                'Turbidity': Turbidity,
-                'MP_Count': MP_Count,
-                # Engineered features (continuous, NOT categorical)
-                'pH_deviation': eng_features['pH_deviation'],
-                'TDS_normalized': eng_features['TDS_normalized'],
-                'pollution_index': eng_features['pollution_index'],
-                'Turbidity_MP_interaction': eng_features['Turbidity_MP_interaction'],
-                'pH_boundary_risk': eng_features['pH_boundary_risk'],
-                'TDS_boundary_risk': eng_features['TDS_boundary_risk']
-            }
-            
-            # Create feature array in correct order
-            features_array = np.array([[features_dict[col] for col in ml_features]])
-            
-            # Predict
-            pred_encoded = ml_model.predict(features_array)[0]
-            ml_risk = ml_encoder.inverse_transform([pred_encoded])[0]
-            
-            # Get confidence (max probability)
-            probabilities = ml_model.predict_proba(features_array)[0]
-            ml_confidence = np.max(probabilities) * 100
-            
-    except Exception as e:
-        # If ML fails, fall back to rule-based only
-        ml_risk = rule_risk
-        ml_confidence = 0.0
+    ml_risk, ml_conf = ml_predict(ph, tds, turbidity, mp_count)
 
     # =====================================================
-    # STEP 4: Final decision (Hybrid: ML + Rule override)
+    # STEP 2: RULE-BASED SAFETY CHECK
+    # (Only used to detect dangerous cases)
     # =====================================================
-    risk_levels = {"Low": 1, "Medium": 2, "High": 3}
+    rule_risk = rule_based_risk(ph, tds, turbidity, mp_count)
+
+    # =====================================================
+    # STEP 3: SAFETY OVERRIDE LOGIC
+    # =====================================================
+
     override_applied = False
-    
-    if risk_levels[ml_risk] < risk_levels[rule_risk]:
-        # ML underestimated → Use rule-based (safety override)
-        final_risk = rule_risk
+
+    # CASE 1: ML already agrees with rules
+    if ml_risk == rule_risk:
+        final_risk = ml_risk
+        override_applied = False
+
+    # CASE 2: ML predicts LOWER risk than rule → override
+    elif (rule_risk == "Medium" and ml_risk == "Low"):
+        final_risk = "Medium"
         override_applied = True
+
+    elif (rule_risk == "High" and ml_risk in ["Low", "Medium"]):
+        final_risk = "High"
+        override_applied = True
+
+    # CASE 4: Otherwise trust ML (ML-first system)
     else:
-        # ML is correct or conservative → Use ML
         final_risk = ml_risk
         override_applied = False
 
     # =====================================================
-    # STEP 5: Return results
+    # STEP 4: RETURN FULL STRUCTURE (UI FRIENDLY)
     # =====================================================
     return {
         "final_risk": final_risk,
         "ml_risk": ml_risk,
-        "ml_confidence": ml_confidence,
-        "override_applied": override_applied,
+        "ml_confidence": ml_conf,
         "rule_risk": rule_risk,
+        "override_applied": override_applied,
+
+        # UI display only (NOT ML features)
         "categories": {
-            "pH": ph_cat,
-            "TDS": tds_cat,
-            "Turbidity": turb_cat,
-            "MP_Count": mp_cat
+            "pH": categorize_parameter(ph, "pH"),
+            "TDS": categorize_parameter(tds, "TDS"),
+            "Turbidity": categorize_parameter(turbidity, "Turbidity"),
+            "MP_Count": categorize_parameter(mp_count, "MP_Count"),
         }
     }
 
-# =====================================================
-# PAGE CONFIGURATION
-# =====================================================
+
+
 
 st.set_page_config(
     page_title="MicroClear",
     page_icon="🔬",
     layout="wide"
 )
-
+            
 # =====================================================
 # CUSTOM CSS STYLING
 # =====================================================
@@ -561,7 +538,7 @@ elif page_name == "Analysis Dashboard":
             use_container_width=True
         )
         st.markdown("</div>", unsafe_allow_html=True)
-
+        
     # =====================================================
     # RESULTS SECTION
     # =====================================================
@@ -570,12 +547,20 @@ elif page_name == "Analysis Dashboard":
         st.divider()
         st.markdown("<div class='header'>📋 Analysis Results</div>", unsafe_allow_html=True)
         
-        # Get assessment
-        assessment = get_final_assessment(ph, tds, turbidity, mp_count)
-        risk_level = assessment["final_risk"]
-        ml_risk = assessment["ml_risk"]
-        ml_confidence = assessment["ml_confidence"]
-        
+        # ===============================
+        # SAFE MODEL CALL (prevents crash)
+        # ===============================
+        try:
+            assessment = final_risk_engine(ph, tds, turbidity, mp_count)
+            risk_level = assessment["final_risk"]
+            ml_risk = assessment["ml_risk"]
+            ml_confidence = assessment["ml_confidence"]
+            override_applied = assessment["override_applied"]
+
+        except Exception as e:
+            st.error(f"❌ Error in risk engine: {e}")
+            st.stop()
+
         # Treatment info
         treatment_info = {
             "Low": {
@@ -620,8 +605,7 @@ elif page_name == "Analysis Dashboard":
         tab1, tab2, tab3 = st.tabs(["📊 Risk Assessment", "💡 Recommendations", "📈 Detailed Analysis"])
         
         with tab1:
-            col1, col2, col3 = st.columns(3)
-            
+            col1, col2, col3 = st.columns(3) 
             with col1:
                 override_text = ""
                 if assessment["override_applied"]:
@@ -653,26 +637,6 @@ elif page_name == "Analysis Dashboard":
                 <small>Recommended Solution</small>
                 </div>
                 """, unsafe_allow_html=True)
-            
-            # ML Confidence Breakdown
-            if ml_model and ml_encoder:
-                try:
-                    eng_feat = calculate_engineered_features(ph, tds, turbidity, mp_count)
-                    feat_dict = {
-                        'pH': ph, 'TDS': tds, 'Turbidity': turbidity, 'MP_Count': mp_count,
-                        **eng_feat
-                    }
-                    X_input = pd.DataFrame([feat_dict])[ml_features]
-                    probs = ml_model.predict_proba(X_input)[0]
-                    prob_df = pd.DataFrame({
-                        "Risk Level": ml_encoder.classes_,
-                        "Probability (%)": [p*100 for p in probs]
-                    }).sort_values("Probability (%)", ascending=False)
-                    
-                    st.markdown("### 🎯 ML Confidence Breakdown")
-                    st.dataframe(prob_df, use_container_width=True, hide_index=True)
-                except:
-                    st.markdown(f"### 🎯 ML Confidence: {ml_confidence:.1f}%")
         
         with tab2:
             st.markdown(f"### 🛠️ Treatment Plan: **{treatment['title']}**")
@@ -731,6 +695,7 @@ elif page_name == "Analysis Dashboard":
             - Muslim Hands International WASH Program
             """)
 
+        
 # =====================================================
 # PAGE 3: FAQ PAGE
 # =====================================================
