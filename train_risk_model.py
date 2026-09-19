@@ -1,18 +1,28 @@
 # =====================================================
-# File: 2_train_model.py (IMPROVED VERSION)
+# File: 2_train_model.py (FINAL IMPROVED VERSION)
+# Purpose: Train ML model + SAVE all performance metrics
 # =====================================================
 
 import pandas as pd
 import numpy as np
+import os
+import json
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    precision_score,
+    recall_score,
+    f1_score
+)
 
 import seaborn as sns
 import matplotlib.pyplot as plt
 import joblib
-import os
+
 
 # =====================================================
 # 1. LOAD DATASET
@@ -20,42 +30,22 @@ import os
 
 df = pd.read_csv("datasets/water_quality_dataset.csv")
 
-print("\nDataset Loaded!")
-print(df.head())
+print("\n Dataset Loaded")
+print(df.shape)
 
 
 # =====================================================
-# 2. DATA CLEANING
+# 2. BASIC CLEANING (SAFE ONLY)
 # =====================================================
 
 df = df.dropna()
 df = df.drop_duplicates()
 
-print("\nAfter cleaning:", df.shape)
+print("\n After cleaning:", df.shape)
 
 
 # =====================================================
-# 3. REMOVE NOISY DATA (VERY IMPORTANT FIX 🔥)
-# Remove samples near boundaries where ML gets confused
-# =====================================================
-
-def remove_boundary_noise(df):
-    return df[
-        (df["pH"].between(6.6, 6.9) == False) &
-        (df["pH"].between(7.0, 7.2) == False) &
-        (df["TDS"].between(190, 210) == False) &
-        (df["TDS"].between(260, 280) == False) &
-        (df["Turbidity"].between(0.9, 1.1) == False) &
-        (df["Turbidity"].between(4.8, 5.2) == False)
-    ]
-
-df = remove_boundary_noise(df)
-
-print("\nAfter removing boundary noise:", df.shape)
-
-
-# =====================================================
-# 4. FEATURE SELECTION (ONLY RAW VALUES ✅)
+# 3. FEATURE SELECTION
 # =====================================================
 
 features = ["pH", "TDS", "Turbidity", "MP_Count"]
@@ -65,7 +55,7 @@ y = df["Risk"]
 
 
 # =====================================================
-# 5. TRAIN / TEST SPLIT
+# 4. TRAIN TEST SPLIT
 # =====================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -77,12 +67,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 # =====================================================
-# 6. MODEL TRAINING (TUNED 🔥)
+# 5. MODEL TRAINING
 # =====================================================
 
 model = RandomForestClassifier(
-    n_estimators=500,     # more trees
-    max_depth=12,         # slightly deeper
+    n_estimators=500,
+    max_depth=12,
     min_samples_split=4,
     min_samples_leaf=1,
     random_state=42
@@ -90,33 +80,66 @@ model = RandomForestClassifier(
 
 model.fit(X_train, y_train)
 
-print("\nModel Training Completed!")
+print("\n Model Training Completed")
 
 
 # =====================================================
-# 7. PREDICTIONS
+# 6. PREDICTIONS
 # =====================================================
 
 y_pred = model.predict(X_test)
 
 
 # =====================================================
-# 8. PERFORMANCE METRICS
+# 7. PERFORMANCE METRICS (SAVE EVERYTHING 🔥)
 # =====================================================
 
 accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average="weighted")
+recall = recall_score(y_test, y_pred, average="weighted")
+f1 = f1_score(y_test, y_pred, average="weighted")
 
-print("\n============================")
-print("MODEL PERFORMANCE")
-print("============================")
-print("Accuracy:", round(accuracy * 100, 2), "%")
+print("\n==============================")
+print(" MODEL PERFORMANCE")
+print("==============================")
 
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
+print("Accuracy :", round(accuracy * 100, 2), "%")
+print("Precision:", round(precision * 100, 2), "%")
+print("Recall   :", round(recall * 100, 2), "%")
+print("F1 Score :", round(f1 * 100, 2), "%")
 
 
 # =====================================================
-# 8. CONFUSION MATRIX (FIXED LABELS ✅)
+# 8. CLASSIFICATION REPORT (DETAILED)
+# =====================================================
+
+report = classification_report(y_test, y_pred, output_dict=True)
+
+print("\n Classification Report Generated")
+
+
+# =====================================================
+# 9. SAVE METRICS TO FILE 
+# =====================================================
+
+os.makedirs("models", exist_ok=True)
+
+metrics_data = {
+    "accuracy": float(accuracy),
+    "precision": float(precision),
+    "recall": float(recall),
+    "f1_score": float(f1),
+    "classification_report": report
+}
+
+with open("models/performance_metrics.json", "w") as f:
+    json.dump(metrics_data, f, indent=4)
+
+print("\n Metrics saved to models/performance_metrics.json")
+
+
+# =====================================================
+# 10. CONFUSION MATRIX
 # =====================================================
 
 labels = ["Low", "Medium", "High"]
@@ -124,29 +147,20 @@ labels = ["Low", "Medium", "High"]
 cm = confusion_matrix(y_test, y_pred, labels=labels)
 
 plt.figure(figsize=(6, 4))
-sns.heatmap(
-    cm,
-    annot=True,
-    fmt="d",
-    cmap="Blues",
-    xticklabels=labels,
-    yticklabels=labels
-)
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=labels, yticklabels=labels)
 
 plt.title("Confusion Matrix")
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
+
 plt.show()
 
 
 # =====================================================
-# 10. SAVE MODEL
+# 11. SAVE MODEL
 # =====================================================
 
-# Shuffle dataset (important for better training)
-df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-
-os.makedirs("models", exist_ok=True)
 joblib.dump(model, "models/risk_model.pkl")
 
-print("\nModel saved successfully!")
+print("\n Model saved successfully!")

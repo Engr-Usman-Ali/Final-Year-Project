@@ -18,4 +18,4 @@ MicroClear is an AI-powered system for detecting microplastic pollution and asse
 
 ```bash
 pip install -r requirements.txt
-streamlit run 3_app.py
+streamlit run app.py
