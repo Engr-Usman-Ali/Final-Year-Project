@@ -1,0 +1,20 @@
+RANDOM FOREST MODEL PERFORMANCE
+================================
+
+Accuracy  : 98.67%
+Precision : 98.69%
+Recall    : 98.67%
+F1 Score  : 98.67%
+
+CLASSIFICATION REPORT
+=====================
+
+              precision    recall  f1-score   support
+
+         Low       0.97      1.00      0.98        96
+      Medium       0.99      0.97      0.98       103
+        High       1.00      0.99      1.00       101
+
+    accuracy                           0.99       300
+   macro avg       0.99      0.99      0.99       300
+weighted avg       0.99      0.99      0.99       300

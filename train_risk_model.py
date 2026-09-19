@@ -1,12 +1,10 @@
 # =====================================================
-# File: 2_train_model.py (FINAL IMPROVED VERSION)
-# Purpose: Train ML model + SAVE all performance metrics
+# File: 2_train_model.py
+# Purpose: Train Random Forest + Save Evaluation Results
 # =====================================================
 
 import pandas as pd
-import numpy as np
 import os
-import json
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -25,27 +23,39 @@ import joblib
 
 
 # =====================================================
-# 1. LOAD DATASET
+# 1. PATHS
+# =====================================================
+
+MODEL_DIR = r"C:\Users\husnain malik\OneDrive\Desktop\FYP\models"
+
+RESULT_DIR = r"C:\Users\husnain malik\OneDrive\Desktop\FYP\EVALUATION\result_randomforest"
+
+os.makedirs(MODEL_DIR, exist_ok=True)
+os.makedirs(RESULT_DIR, exist_ok=True)
+
+
+# =====================================================
+# 2. LOAD DATASET
 # =====================================================
 
 df = pd.read_csv("datasets/water_quality_dataset.csv")
 
-print("\n Dataset Loaded")
-print(df.shape)
+print("\nDataset Loaded")
+print("Dataset Shape:", df.shape)
 
 
 # =====================================================
-# 2. BASIC CLEANING (SAFE ONLY)
+# 3. BASIC CLEANING
 # =====================================================
 
 df = df.dropna()
 df = df.drop_duplicates()
 
-print("\n After cleaning:", df.shape)
+print("\nAfter Cleaning:", df.shape)
 
 
 # =====================================================
-# 3. FEATURE SELECTION
+# 4. FEATURE SELECTION
 # =====================================================
 
 features = ["pH", "TDS", "Turbidity", "MP_Count"]
@@ -55,11 +65,12 @@ y = df["Risk"]
 
 
 # =====================================================
-# 4. TRAIN TEST SPLIT
+# 5. TRAIN TEST SPLIT
 # =====================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
+    X,
+    y,
     test_size=0.2,
     random_state=42,
     stratify=y
@@ -67,7 +78,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 # =====================================================
-# 5. MODEL TRAINING
+# 6. MODEL TRAINING
 # =====================================================
 
 model = RandomForestClassifier(
@@ -80,27 +91,43 @@ model = RandomForestClassifier(
 
 model.fit(X_train, y_train)
 
-print("\n Model Training Completed")
+print("\nModel Training Completed")
 
 
 # =====================================================
-# 6. PREDICTIONS
+# 7. PREDICTIONS
 # =====================================================
 
 y_pred = model.predict(X_test)
 
 
 # =====================================================
-# 7. PERFORMANCE METRICS (SAVE EVERYTHING 🔥)
+# 8. PERFORMANCE METRICS
 # =====================================================
 
 accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred, average="weighted")
-recall = recall_score(y_test, y_pred, average="weighted")
-f1 = f1_score(y_test, y_pred, average="weighted")
+
+precision = precision_score(
+    y_test,
+    y_pred,
+    average="weighted"
+)
+
+recall = recall_score(
+    y_test,
+    y_pred,
+    average="weighted"
+)
+
+f1 = f1_score(
+    y_test,
+    y_pred,
+    average="weighted"
+)
+
 
 print("\n==============================")
-print(" MODEL PERFORMANCE")
+print("MODEL PERFORMANCE")
 print("==============================")
 
 print("Accuracy :", round(accuracy * 100, 2), "%")
@@ -110,57 +137,151 @@ print("F1 Score :", round(f1 * 100, 2), "%")
 
 
 # =====================================================
-# 8. CLASSIFICATION REPORT (DETAILED)
-# =====================================================
-
-report = classification_report(y_test, y_pred, output_dict=True)
-
-print("\n Classification Report Generated")
-
-
-# =====================================================
-# 9. SAVE METRICS TO FILE 
-# =====================================================
-
-os.makedirs("models", exist_ok=True)
-
-metrics_data = {
-    "accuracy": float(accuracy),
-    "precision": float(precision),
-    "recall": float(recall),
-    "f1_score": float(f1),
-    "classification_report": report
-}
-
-with open("models/performance_metrics.json", "w") as f:
-    json.dump(metrics_data, f, indent=4)
-
-print("\n Metrics saved to models/performance_metrics.json")
-
-
-# =====================================================
-# 10. CONFUSION MATRIX
+# 9. CLASSIFICATION REPORT
 # =====================================================
 
 labels = ["Low", "Medium", "High"]
 
-cm = confusion_matrix(y_test, y_pred, labels=labels)
+report = classification_report(
+    y_test,
+    y_pred,
+    labels=labels
+)
 
-plt.figure(figsize=(6, 4))
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
-            xticklabels=labels, yticklabels=labels)
+print("\n==============================")
+print("CLASSIFICATION REPORT")
+print("==============================")
 
-plt.title("Confusion Matrix")
-plt.xlabel("Predicted")
-plt.ylabel("Actual")
+print(report)
+
+
+# =====================================================
+# 10. SAVE PERFORMANCE RESULTS
+# =====================================================
+
+performance_file = os.path.join(
+    RESULT_DIR,
+    "performance_metrics.txt"
+)
+
+with open(performance_file, "w") as f:
+
+    f.write("RANDOM FOREST MODEL PERFORMANCE\n")
+    f.write("================================\n\n")
+
+    f.write(f"Accuracy  : {accuracy * 100:.2f}%\n")
+    f.write(f"Precision : {precision * 100:.2f}%\n")
+    f.write(f"Recall    : {recall * 100:.2f}%\n")
+    f.write(f"F1 Score  : {f1 * 100:.2f}%\n\n")
+
+    f.write("CLASSIFICATION REPORT\n")
+    f.write("=====================\n\n")
+
+    f.write(report)
+
+
+print("\nPerformance metrics saved.")
+
+
+# =====================================================
+# 11. CONFUSION MATRIX
+# =====================================================
+
+cm = confusion_matrix(
+    y_test,
+    y_pred,
+    labels=labels
+)
+
+print("\n==============================")
+print("CONFUSION MATRIX")
+print("==============================")
+
+print(cm)
+
+
+# =====================================================
+# 12. SAVE CONFUSION MATRIX CSV
+# =====================================================
+
+cm_df = pd.DataFrame(
+    cm,
+    index=labels,
+    columns=labels
+)
+
+cm_file = os.path.join(
+    RESULT_DIR,
+    "confusion_matrix.csv"
+)
+
+cm_df.to_csv(cm_file)
+
+print("\nConfusion matrix CSV saved.")
+
+
+# =====================================================
+# 13. SAVE CONFUSION MATRIX IMAGE
+# =====================================================
+
+plt.figure(figsize=(7, 5))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=labels,
+    yticklabels=labels
+)
+
+plt.title("Random Forest Confusion Matrix")
+plt.xlabel("Predicted Risk")
+plt.ylabel("Actual Risk")
+
+plt.tight_layout()
+
+confusion_image = os.path.join(
+    RESULT_DIR,
+    "confusion_matrix.png"
+)
+
+plt.savefig(
+    confusion_image,
+    dpi=300,
+    bbox_inches="tight"
+)
 
 plt.show()
 
+print("\nConfusion matrix image saved.")
+
 
 # =====================================================
-# 11. SAVE MODEL
+# 14. SAVE MODEL IN EXISTING MODELS FOLDER
 # =====================================================
 
-joblib.dump(model, "models/risk_model.pkl")
+model_file = os.path.join(
+    MODEL_DIR,
+    "risk_model.pkl"
+)
 
-print("\n Model saved successfully!")
+joblib.dump(model, model_file)
+
+print("\nModel saved successfully at:")
+print(model_file)
+
+
+# =====================================================
+# 15. FINAL OUTPUT
+# =====================================================
+
+print("\n======================================")
+print("RANDOM FOREST EVALUATION COMPLETED")
+print("======================================")
+
+print("\nModel:")
+print(model_file)
+
+print("\nEvaluation Results:")
+print(RESULT_DIR) 
