@@ -1,0 +1,27 @@
+MICROCLEAR — YOLOv8 FINAL MODEL SUMMARY
+======================================================================
+
+Model: YOLOv8s
+Image size: 640x640
+Epochs: 100
+Batch size: 8
+Optimizer: AdamW
+Learning rate: 0.0003
+GPU: Tesla T4
+
+VALIDATION
+----------------------------------------
+Precision: 0.9487
+Recall: 0.8904
+mAP50: 0.9338
+mAP50-95: 0.6667
+
+TEST
+----------------------------------------
+Precision: 0.9670
+Recall: 0.9126
+mAP50: 0.9532
+mAP50-95: 0.6882
+
+BEST MODEL
+/content/drive/MyDrive/MicroClear/models/microplastic_yolo_roboflow_640_run2/best.pt

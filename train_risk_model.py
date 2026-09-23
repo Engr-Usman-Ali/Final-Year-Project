@@ -1,10 +1,11 @@
 # =====================================================
-# File: 2_train_model.py
+# File: train_risk_model.py
 # Purpose: Train Random Forest + Save Evaluation Results
 # =====================================================
 
 import pandas as pd
 import os
+from pathlib import Path
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -23,13 +24,21 @@ import joblib
 
 
 # =====================================================
-# 1. PATHS
+# 1. PATHS (RELATIVE TO FYP FOLDER)
 # =====================================================
 
-MODEL_DIR = r"C:\Users\husnain malik\OneDrive\Desktop\FYP\models"
+BASE_DIR = Path(__file__).resolve().parent
 
-RESULT_DIR = r"C:\Users\husnain malik\OneDrive\Desktop\FYP\EVALUATION\result_randomforest"
+# Models directory: ./models
+MODEL_DIR = BASE_DIR / "models"
 
+# Results directory: ./models/result_randomforest
+RESULT_DIR = MODEL_DIR / "result_randomforest"
+
+# Dataset directory: ./datasets
+DATASET_DIR = BASE_DIR / "datasets"
+
+# Create directories if they don't exist
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 
@@ -38,7 +47,13 @@ os.makedirs(RESULT_DIR, exist_ok=True)
 # 2. LOAD DATASET
 # =====================================================
 
-df = pd.read_csv("datasets/water_quality_dataset.csv")
+# Path to dataset: ./datasets/water_quality_dataset.csv
+dataset_path = DATASET_DIR / "water_quality_dataset.csv"
+
+if not dataset_path.exists():
+    raise FileNotFoundError(f"Dataset not found at: {dataset_path}")
+
+df = pd.read_csv(dataset_path)
 
 print("\nDataset Loaded")
 print("Dataset Shape:", df.shape)
@@ -159,10 +174,7 @@ print(report)
 # 10. SAVE PERFORMANCE RESULTS
 # =====================================================
 
-performance_file = os.path.join(
-    RESULT_DIR,
-    "performance_metrics.txt"
-)
+performance_file = RESULT_DIR / "performance_metrics.txt"
 
 with open(performance_file, "w") as f:
 
@@ -210,10 +222,7 @@ cm_df = pd.DataFrame(
     columns=labels
 )
 
-cm_file = os.path.join(
-    RESULT_DIR,
-    "confusion_matrix.csv"
-)
+cm_file = RESULT_DIR / "confusion_matrix.csv"
 
 cm_df.to_csv(cm_file)
 
@@ -241,10 +250,7 @@ plt.ylabel("Actual Risk")
 
 plt.tight_layout()
 
-confusion_image = os.path.join(
-    RESULT_DIR,
-    "confusion_matrix.png"
-)
+confusion_image = RESULT_DIR / "confusion_matrix.png"
 
 plt.savefig(
     confusion_image,
@@ -258,13 +264,11 @@ print("\nConfusion matrix image saved.")
 
 
 # =====================================================
-# 14. SAVE MODEL IN EXISTING MODELS FOLDER
+# 14. SAVE MODEL IN MODELS FOLDER
 # =====================================================
 
-model_file = os.path.join(
-    MODEL_DIR,
-    "risk_model.pkl"
-)
+# Save directly into the 'models' folder
+model_file = MODEL_DIR / "risk_model.pkl"
 
 joblib.dump(model, model_file)
 
@@ -284,4 +288,4 @@ print("\nModel:")
 print(model_file)
 
 print("\nEvaluation Results:")
-print(RESULT_DIR) 
+print(RESULT_DIR)

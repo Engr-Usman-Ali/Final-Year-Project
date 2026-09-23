@@ -1,0 +1,17 @@
+MICROCLEAR DATASET INFORMATION
+============================================================
+
+Dataset root: /content/microplastic_new
+
+TRAIN
+Images: 3226
+Labels: 3226
+
+VALID
+Images: 928
+Labels: 928
+
+TEST
+Images: 453
+Labels: 453
+

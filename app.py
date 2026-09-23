@@ -1,5 +1,5 @@
 # =====================================================
-# File: 3_app.py
+# File: app.py
 # MicroClear - AI-Based Microplastic Pollution Risk
 # Assessment and Mitigation System
 # Streamlit Web Application
@@ -12,6 +12,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
 from PIL import Image
 from ultralytics import YOLO
 
@@ -36,13 +37,14 @@ def load_models():
     """Load YOLO and ML models once and reuse them across reruns."""
 
     try:
-        yolo_model = YOLO("models/best.pt")
+        # Using raw string or forward slashes for cross-platform compatibility
+        yolo_model = YOLO("models/microplastic_yolo_roboflow_640_run2/best.pt")
         yolo_status = True
     except Exception:
         yolo_model = None
         yolo_status = False
 
-    MODEL_PATH = "models/risk_model.pkl"
+    MODEL_PATH = "models/result_randomforest/risk_model.pkl"
     if os.path.exists(MODEL_PATH):
         ml_model = joblib.load(MODEL_PATH)
         ml_status = True
@@ -69,8 +71,6 @@ if "models_notified" not in st.session_state:
 
 # =====================================================
 # HELPER: render HTML safely inside st.markdown
-# (Markdown treats indented lines / blank lines as code,
-#  so indentation and blank lines are stripped first.)
 # =====================================================
 
 def html(block: str):
@@ -115,6 +115,49 @@ def categorize_parameter(value, param):
             return "Moderate"
         else:
             return "Poor"
+
+
+# =====================================================
+# 6.9 VISUALIZATION AND CHART RENDERING (NFR-05)
+# =====================================================
+
+def plot_parameter_status(param_name, value, category):
+    """
+    Generates a horizontal bar chart showing the status of a single parameter.
+    Matches the 'Good', 'Moderate', 'Poor' color scheme.
+    Never saves to disk (Data Privacy NFR-05).
+    """
+    colors = {
+        'Good': '#3DDC97',      # Matches --good in CSS
+        'Moderate': '#FFC24B',  # Matches --mod in CSS
+        'Poor': '#FF6B6B'       # Matches --poor in CSS
+    }
+    
+    # 1. Set dark theme for this specific figure
+    plt.style.use('dark_background')
+    
+    # 2. Create figure with transparent background
+    fig, ax = plt.subplots(figsize=(5, 0.8))
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    
+    # 3. Plot the bar
+    ax.barh([param_name], [1], color=colors.get(category, '#93AEBB'))
+    
+    # 4. Styling
+    ax.set_xlim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    # 5. Title with white text and proper padding
+    ax.set_title(f'{param_name}: {value} ({category})', fontsize=10, loc='left', pad=10, color='#E4F1F5')
+    
+    # 6. Remove borders
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+        
+    plt.tight_layout()
+    return fig
 
 
 # =====================================================
@@ -178,7 +221,6 @@ def final_risk_engine(ph, tds, turbidity, mp_count):
     override_applied = False
 
     if ml_risk == "Unknown":
-        # ML model missing -> fall back to the safety rules
         final_risk = rule_risk
 
     elif ml_risk == rule_risk:
@@ -260,15 +302,14 @@ header[data-testid="stHeader"],
 
 .block-container, [data-testid="stMainBlockContainer"] {
     max-width: 1200px;
-    padding-top: 6.8rem;   /* space for the fixed navbar */
+    padding-top: 6.8rem;
     padding-bottom: 3rem;
     padding-left: 2rem;
     padding-right: 2rem;
 }
 
 /* =====================================================
-   TOP NAVBAR - fixed to the top of the screen, full width
-   logo / name (left)                     nav links (right)
+   TOP NAVBAR
    ===================================================== */
 div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) {
     position: fixed !important;
@@ -280,7 +321,6 @@ div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) {
     margin: 0 !important;
     box-sizing: border-box;
     z-index: 100000;
-    /* inner padding keeps logo and links aligned with the page content */
     padding: 12px max(2rem, calc((100vw - 1200px) / 2 + 2rem));
     align-items: center;
     gap: 1rem;
@@ -291,7 +331,6 @@ div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) {
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
 }
-/* Column layout inside the navbar: logo at the far left, links at the far right */
 div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) {
     justify-content: space-between !important;
     flex-wrap: nowrap !important;
@@ -317,7 +356,6 @@ div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) > div:last-child {
 .mc-nav-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.15rem; color: #fff; line-height: 1.1; }
 .mc-nav-sub { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
 
-/* Radio group -> plain text links with an underline on the active page */
 div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) div[role="radiogroup"] {
     display: flex;
     flex-wrap: wrap;
@@ -485,6 +523,7 @@ div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) div[role="radiogroup"] 
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .result-box:hover { transform: translateY(-3px); box-shadow: 0 14px 38px rgba(0, 0, 0, 0.45); }
+
 /* ---------- Home: hero ---------- */
 .mc-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; width: 100%; }
 .mc-logo {
@@ -697,8 +736,6 @@ div[data-testid="stHorizontalBlock"]:has(.mc-nav-marker) div[role="radiogroup"] 
 
 # =====================================================
 # TOP NAVBAR (no sidebar)
-# Native Streamlit radio styled as pills, so navigation
-# never reloads the page and session data is preserved.
 # =====================================================
 
 NAV_HOME = "🏠 Home"
@@ -1352,6 +1389,38 @@ elif page_name == "Analysis Dashboard":
             
             st.write("") 
 
+            # =====================================================
+            # 6.9 VISUALIZATION AND CHART RENDERING
+            # =====================================================
+            st.markdown("#### 📈 Visual Status Indicators")
+            st.caption("Visual representation of each parameter relative to its safety bands.")
+            
+            # Generate charts for all 4 parameters in 2 columns
+            col_chart1, col_chart2 = st.columns(2)
+            
+            with col_chart1:
+                # pH Chart
+                fig_ph = plot_parameter_status("pH", ph, cats['pH'])
+                st.pyplot(fig_ph, use_container_width=True)
+                plt.close(fig_ph)
+                
+                # Turbidity Chart
+                fig_turb = plot_parameter_status("Turbidity", f"{turbidity} NTU", cats['Turbidity'])
+                st.pyplot(fig_turb, use_container_width=True)
+                plt.close(fig_turb)
+
+            with col_chart2:
+                # TDS Chart
+                fig_tds = plot_parameter_status("TDS", f"{tds} mg/L", cats['TDS'])
+                st.pyplot(fig_tds, use_container_width=True)
+                plt.close(fig_tds)
+
+                # MP Count Chart
+                fig_mp = plot_parameter_status("Microplastics", f"{mp_count} particles", cats['MP_Count'])
+                st.pyplot(fig_mp, use_container_width=True)
+                plt.close(fig_mp)
+
+            st.write("") 
             st.markdown("#### 📚 Reference standard values")
             st.info("""
             **WHO and PCRWR parameter standard values applied:**
