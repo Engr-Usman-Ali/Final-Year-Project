@@ -1053,78 +1053,129 @@ elif page_name == "Analysis Dashboard":
             - Dry filter paper properly
             - Capture microscope image
             """)
+            # ============================================================
+            # STRICT SINGLE-FILE UPLOAD WITH EXTENSION VALIDATION
+            # ============================================================
 
             uploaded_file = st.file_uploader(
                 "Upload microscope image *",
-                type=["png", "jpg", "jpeg"],
-                help="Upload a clear microscope image of the water sample.",
+                type=None,                      # Disable Streamlit's own filter
+                accept_multiple_files=False,    # Only one file at a time
+                help="Upload a single microscope image (JPG or PNG only, maximum 10 MB).",
             )
+
+            MAX_SIZE_MB = 10
+            ALLOWED_EXTENSIONS = (".jpg", ".jpeg", ".png")
 
             if uploaded_file:
 
-                # A different image was uploaded -> old detection is stale
-                file_sig = (uploaded_file.name, uploaded_file.size)
-                if st.session_state.get("file_sig") != file_sig:
-                    st.session_state["file_sig"] = file_sig
+                file_name = uploaded_file.name
+                file_size_mb = uploaded_file.size / (1024 * 1024)
+                ext = os.path.splitext(file_name.lower())[1]
+
+                # ---------------- 1) Extension check ----------------
+                if ext not in ALLOWED_EXTENSIONS:
+                    st.session_state["upload_status"] = (
+                        "error",
+                        f"❌ '{file_name}' is not an allowed file type. "
+                        f"Only JPG, JPEG, and PNG images are accepted."
+                    )
+                    st.session_state["file_sig"] = None
                     reset_detection()
 
-                img = Image.open(uploaded_file).convert("RGB")
+                # ---------------- 2) Size check ----------------
+                elif file_size_mb > MAX_SIZE_MB:
+                    st.session_state["upload_status"] = (
+                        "error",
+                        f"❌ '{file_name}' is too large ({file_size_mb:.1f} MB). "
+                        f"Maximum allowed size is {MAX_SIZE_MB} MB."
+                    )
+                    st.session_state["file_sig"] = None
+                    reset_detection()
 
-                st.success(f"✅ {uploaded_file.name} uploaded ({img.width} × {img.height} px)")
-                st.caption("The original and detected images appear side by side in the detailed report after the analysis.")
+                # ---------------- 3) Everything else is valid ----------------
+                else:
+                    file_sig = (file_name, uploaded_file.size)
+                    if st.session_state.get("file_sig") != file_sig:
+                        st.session_state["file_sig"] = file_sig
+                        reset_detection()
+
+                    try:
+                        img = Image.open(uploaded_file).convert("RGB")
+
+                        st.session_state["upload_status"] = (
+                            "success",
+                            f"✅ {file_name} uploaded successfully "
+                            f"({img.width} × {img.height} px, {file_size_mb:.1f} MB)."
+                        )
+
+                    except Exception as e:
+                        st.session_state["upload_status"] = (
+                            "error",
+                            f"❌ '{file_name}' could not be read as an image. "
+                            f"Please upload a valid JPG or PNG file. ({e})"
+                        )
+                        st.session_state["file_sig"] = None
+                        reset_detection()
+
+                # ---------------- Persistent status banner ----------------
+                status = st.session_state.get("upload_status")
+                if status is not None:
+                    status_type, status_msg = status
+                    if status_type == "success":
+                        st.success(status_msg)
+                    elif status_type == "error":
+                        st.error(status_msg)
+
+                st.caption(
+                    "The original and detected images appear side by side "
+                    "in the detailed report after the analysis."
+                )
 
                 st.write("")
 
-                if st.button(
-                    "🔍 Detect microplastics",
-                    type="primary",
-                    use_container_width=True,
-                ):
+                # ---------------- Detect button (only when valid) ----------------
+                if st.session_state.get("upload_status") is not None and \
+                   st.session_state["upload_status"][0] == "success":
 
-                    if yolo_model is None:
+                    if st.button(
+                        "🔍 Detect microplastics",
+                        type="primary",
+                        width='stretch',
+                    ):
+                        if yolo_model is None:
+                            st.error("YOLO model file not found. Please check the model path.")
+                        else:
+                            with st.spinner("Running YOLOv8 detection..."):
+                                try:
+                                    results = yolo_model(np.array(img), imgsz=640, conf=0.5)
+                                    result = results[0]
+                                    boxes = result.boxes
 
-                        st.error("YOLO model file not found. Please check the model path.")
+                                    detected_count = len(boxes)
+                                    confidences = [float(box.conf[0]) for box in boxes]
+                                    avg_conf = float(np.mean(confidences) * 100) if confidences else 0.0
 
-                    else:
+                                    detected_image = cv2.cvtColor(result.plot(), cv2.COLOR_BGR2RGB)
 
-                        with st.spinner("Running YOLOv8 detection..."):
+                                    st.session_state["detected_count"] = detected_count
+                                    st.session_state["detection_confidence"] = avg_conf
+                                    st.session_state["detected_image"] = detected_image
+                                    st.session_state["original_image"] = np.array(img)
+                                    st.session_state["detection_completed"] = True
 
-                            try:
-
-                                # SRS: confidence threshold >= 0.5
-                                results = yolo_model(np.array(img), imgsz=640, conf=0.5)
-                                result = results[0]
-                                boxes = result.boxes
-
-                                detected_count = len(boxes)
-
-                                confidences = [float(box.conf[0]) for box in boxes]
-                                avg_conf = float(np.mean(confidences) * 100) if confidences else 0.0
-
-                                # result.plot() returns a BGR array -> convert to RGB for display
-                                detected_image = cv2.cvtColor(result.plot(), cv2.COLOR_BGR2RGB)
-
-                                st.session_state["detected_count"] = detected_count
-                                st.session_state["detection_confidence"] = avg_conf
-                                st.session_state["detected_image"] = detected_image
-                                st.session_state["original_image"] = np.array(img)
-                                st.session_state["detection_completed"] = True
-
-                                st.success(
-                                    f"Detection complete: {detected_count} particles found "
-                                    f"(confidence {avg_conf:.1f}%)"
-                                )
-
-                            except Exception as e:
-
-                                st.session_state["detection_completed"] = False
-                                st.error(f"❌ YOLO detection error: {e}")
+                                    st.success(
+                                        f"Detection complete: {detected_count} particles found "
+                                        f"(confidence {avg_conf:.1f}%)"
+                                    )
+                                except Exception as e:
+                                    st.session_state["detection_completed"] = False
+                                    st.error(f"❌ YOLO detection error: {e}")
 
             else:
-
-                st.info("Upload a microscope image to start the analysis.")
-
+                st.session_state["upload_status"] = None
                 st.session_state["file_sig"] = None
+                st.info("Upload a microscope image to start the analysis.")
                 reset_detection()
 
     # =================================================
@@ -1187,7 +1238,7 @@ elif page_name == "Analysis Dashboard":
             run_analysis = st.button(
                 "📈 Analyze risk level",
                 type="primary",
-                use_container_width=True,
+                width='stretch',
                 disabled=not detection_done,
             )
 
@@ -1378,14 +1429,16 @@ elif page_name == "Analysis Dashboard":
             st.markdown("#### 📊 Parameter categorization")
             cats = assessment['categories']
             icon = {"Good": "✅", "Moderate": "⚠️", "Poor": "❌"}
-            cat_data = {
+            cat_data = pd.DataFrame({
                 "Parameter": ["pH", "TDS", "Turbidity", "Microplastic count"],
-                "Value": [ph, f"{tds} mg/L", f"{turbidity} NTU", f"{mp_count} particles"],
+                "Value": [f"{ph}", f"{tds} mg/L", f"{turbidity} NTU", f"{mp_count} particles"],
                 "Category": [cats['pH'], cats['TDS'], cats['Turbidity'], cats['MP_Count']],
                 "Status": [icon[cats['pH']], icon[cats['TDS']], icon[cats['Turbidity']], icon[cats['MP_Count']]],
                 "Parameter standard values": ["7.1-7.8", "200-270 mg/L", "<1 NTU", "0 particles"],
-            }
-            st.table(cat_data)
+            }).astype(str)
+
+            st.dataframe(cat_data, hide_index=True, width='stretch')
+
             
             st.write("") 
 
@@ -1401,25 +1454,26 @@ elif page_name == "Analysis Dashboard":
             with col_chart1:
                 # pH Chart
                 fig_ph = plot_parameter_status("pH", ph, cats['pH'])
-                st.pyplot(fig_ph, use_container_width=True)
+                st.pyplot(fig_ph, width='stretch')
                 plt.close(fig_ph)
                 
                 # Turbidity Chart
                 fig_turb = plot_parameter_status("Turbidity", f"{turbidity} NTU", cats['Turbidity'])
-                st.pyplot(fig_turb, use_container_width=True)
+                st.pyplot(fig_turb, width='stretch')
                 plt.close(fig_turb)
 
             with col_chart2:
                 # TDS Chart
                 fig_tds = plot_parameter_status("TDS", f"{tds} mg/L", cats['TDS'])
-                st.pyplot(fig_tds, use_container_width=True)
+                st.pyplot(fig_tds, width='stretch')
                 plt.close(fig_tds)
-
+                
                 # MP Count Chart
                 fig_mp = plot_parameter_status("Microplastics", f"{mp_count} particles", cats['MP_Count'])
-                st.pyplot(fig_mp, use_container_width=True)
+                st.pyplot(fig_mp, width='stretch')
                 plt.close(fig_mp)
 
+                
             st.write("") 
             st.markdown("#### 📚 Reference standard values")
             st.info("""
