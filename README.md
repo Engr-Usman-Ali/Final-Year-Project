@@ -1,106 +1,204 @@
 # MicroClear — AI-Based Microplastic Pollution Risk Assessment and Mitigation System
 
+MicroClear is an AI-based water assessment system that detects microplastic particles in microscope images and evaluates water pollution risk using water-quality parameters.
+
+The system combines **YOLOv8 object detection, Random Forest classification, and rule-based safety checks** to generate a final risk assessment and provide treatment recommendations through a Streamlit web application.
+
+## Table of Contents
+
+- [Project Overview](#1-project-overview)
+- [Problem Statement](#2-problem-statement)
+- [Main Objectives](#3-main-objectives)
+- [System Architecture](#4-system-architecture)
+- [System Workflow](#5-system-workflow)
+- [Application Screenshots](#6-application-screenshots)
+- [AI Models](#7-ai-models)
+- [Final Risk Decision](#8-final-risk-decision)
+- [Model Performance](#9-model-performance)
+- [Technology Stack](#10-technology-stack)
+- [Project Structure](#11-project-structure)
+- [Installation](#12-installation)
+- [Run the Application](#13-run-the-application)
+- [How to Use](#14-how-to-use)
+- [Expected Output](#15-expected-output)
+
 ## 1. Project Overview
 
-**MicroClear** is an AI-based water pollution assessment system designed to detect **microplastics in microscope images** and assess the overall **water pollution risk** using water-quality parameters.
+MicroClear provides an automated approach to screening water samples for potential microplastic pollution and assessing water-quality risks.
 
-The system combines **Computer Vision, Machine Learning, and Rule-Based Decision Making** to provide a final pollution risk level.
+The system uses three main components:
 
-The system uses:
+- **YOLOv8:** Detects and counts microplastic particles in microscope images.
+- **Random Forest:** Classifies water pollution risk using the detected particle count and water-quality parameters.
+- **Rule-Based Safety Layer:** Checks critical water-quality conditions and can increase the final risk level when a parameter falls into the defined Poor category.
 
-* **YOLOv8** for microplastic detection and counting.
-* **Random Forest** for water pollution risk classification.
-* **Rule-Based Safety Layer** for the final risk decision.
-
----
+The application provides risk assessments, model confidence, parameter classifications, and treatment recommendations.
 
 ## 2. Problem Statement
 
-Microplastic pollution in water is difficult to identify and assess manually. Traditional inspection requires time and may depend on human observation.
+Microplastic pollution is difficult to identify and assess through manual inspection alone. Laboratory techniques can require specialized equipment, trained personnel, and additional resources.
 
-MicroClear provides an automated approach where a microscope image is analyzed using AI to detect microplastic particles. The detected microplastic count is then combined with water-quality parameters to determine the pollution risk.
+MicroClear offers an accessible, AI-assisted screening approach. It analyzes microscope images, combines the detected microplastic count with pH, Total Dissolved Solids (TDS), and turbidity measurements, and generates a preliminary pollution risk assessment.
 
----
+**Important:** MicroClear is a screening and decision-support tool. Its predictions do not replace laboratory microplastic identification, certified water-quality testing, or official drinking-water safety assessments.
 
 ## 3. Main Objectives
 
-* Detect microplastic particles from microscope images.
-* Automatically count detected microplastic particles.
-* Measure the detection confidence of YOLOv8.
-* Collect important water-quality parameters:
+- Detect microplastic particles in microscope images.
+- Automatically count detected particles and display bounding boxes.
+- Calculate detection confidence using YOLOv8.
+- Collect pH, TDS, and turbidity measurements.
+- Classify water pollution risk using a Random Forest model.
+- Apply rule-based safety checks to determine the final risk level.
+- Present results through a user-friendly Streamlit application.
+- Provide risk-based treatment recommendations and a detailed assessment report.
 
-  * pH
-  * TDS
-  * Turbidity
-* Classify water pollution risk using Machine Learning.
-* Apply safety rules to produce the final risk level.
-* Provide a simple web-based interface using Streamlit.
+## 4. System Architecture
 
----
+The MicroClear architecture connects image processing, object detection, water-quality inputs, machine learning, and rule-based safety checks.
 
-## 4. System Workflow
+![MicroClear High-Level Architecture](screenshots/architecture.png)
+
+*Figure: High-level architecture of MicroClear.*
+
+
+## 5. System Workflow
+
+The system follows this analysis pipeline:
 
 ```text
 Microscope Image
-       ↓
-    YOLOv8
-       ↓
-Microplastic Detection
-       ↓
-Microplastic Count + Confidence
-       ↓
-pH + TDS + Turbidity
-       ↓
-Random Forest Model
-       ↓
-ML Risk Prediction
-       ↓
-Rule-Based Safety Layer
-       ↓
-Final Risk Level
+       |
+       v
+Image Preprocessing
+       |
+       v
+YOLOv8 Microplastic Detection
+       |
+       v
+Detected Particles, Count, and Confidence
+       |
+       +-----------------------------+
+       |                             |
+       v                             v
+pH, TDS, and Turbidity         Microplastic Count
+       |                             |
+       +--------------+--------------+
+                      |
+                      v
+             Random Forest Model
+                      |
+                      v
+              ML Risk Prediction
+                      |
+                      v
+            Rule-Based Safety Layer
+                      |
+                      v
+                Final Risk Level
+                      |
+                      v
+        Assessment and Recommendations
 ```
 
-The final risk level can be:
+The final risk level belongs to one of three categories:
 
-* **Low**
-* **Medium**
-* **High**
+- **Low**
+- **Medium**
+- **High**
 
----
+## 6. Application Screenshots
 
-## 5. AI Models
+The following screenshots demonstrate the main application pages and analysis features.
 
-### YOLOv8 — Microplastic Detection
+### 6.1 Home Page
 
-YOLOv8 is used to detect microplastic particles in microscope images.
+The home page introduces MicroClear and provides access to the water sample assessment workflow.
+
+![MicroClear Home Page](screenshots/home-page.png)
+
+### 6.2 Analysis Dashboard
+
+The Analysis Dashboard allows users to upload a microscope image, enter water-quality measurements, and initiate an assessment.
+
+![MicroClear Analysis Dashboard](screenshots/analysis-dashboard.png)
+
+### 6.3 Risk Assessment
+
+The Risk Assessment tab displays the final risk level, machine learning prediction, confidence information, and relevant assessment details.
+
+![Risk Assessment Results](screenshots/risk-assessment.png)
+
+### 6.4 Treatment Recommendations
+
+The Recommendations tab provides treatment suggestions and actions according to the assessed risk level.
+
+![Treatment Recommendations](screenshots/recommendations.png)
+
+### 6.5 Detailed Assessment Report
+
+The Detailed Report presents additional information about the prediction, detected particles, water-quality measurements, and safety checks.
+
+**Report overview:**
+
+![Detailed Report Top](screenshots/detailed-report-top.png)
+
+**Additional report details:**
+
+![Detailed Report Bottom](screenshots/detailed-report-bottom.png)
+
+### 6.6 FAQ and Help
+
+The FAQ and Help page provides information to help users understand and use the system.
+
+![FAQ and Help Page](screenshots/faq-help.png)
+
+### 6.7 About Page
+
+The About page presents information about the MicroClear project.
+
+![About MicroClear](screenshots/about-page.png)
+
+### 6.8 Safety Override
+
+The safety layer can override the initial machine learning prediction when a measured water-quality parameter falls into the system's defined Poor category.
+
+This feature adds an additional rule-based check before the final risk level is displayed.
+
+![Safety Override Example](screenshots/safety-override.png)
+
+## 7. AI Models
+
+### 7.1 YOLOv8 — Microplastic Detection
+
+MicroClear uses YOLOv8 for object detection in microscope images.
 
 The model:
 
-* Accepts microscope images.
-* Detects microplastic particles.
-* Draws bounding boxes around detected particles.
-* Counts the detected particles.
-* Provides detection confidence.
+- Detects microplastic particles.
+- Draws bounding boxes around detected objects.
+- Counts the detected particles.
+- Provides confidence scores for detections.
 
-Detection is performed using:
+**Detection configuration:**
 
-```text
-Image Size: 640 × 640
-Confidence Threshold: 0.50
-```
+| Setting | Value |
+|---|---|
+| Model | YOLOv8 |
+| Input image size | 640 × 640 |
+| Detection confidence threshold | 0.50 |
+| Training duration | 100 epochs |
 
-### Random Forest — Risk Classification
+### 7.2 Random Forest — Risk Classification
 
-The Random Forest model classifies water pollution risk using:
+The Random Forest classifier predicts a water pollution risk category using the following features:
 
-```text
-pH
-TDS
-Turbidity
-Microplastic Count
-```
+- pH
+- Total Dissolved Solids (TDS)
+- Turbidity
+- Detected microplastic count
 
-The model predicts one of three classes:
+The model produces one of three risk classes:
 
 ```text
 Low
@@ -108,93 +206,87 @@ Medium
 High
 ```
 
----
+The model prediction is subsequently checked by the rule-based safety layer.
 
-## 6. Final Risk Decision
+## 8. Final Risk Decision
 
-MicroClear uses a hybrid approach combining Machine Learning with rule-based safety logic.
+MicroClear combines machine learning with rule-based safety logic.
 
-The Random Forest model first provides the ML-based risk prediction.
+1. YOLOv8 detects and counts microplastic particles.
+2. The system combines the detected count with the entered water-quality parameters.
+3. The Random Forest model predicts the initial pollution risk.
+4. The safety layer checks the parameter classifications.
+5. If any parameter falls into the defined Poor category, the final risk is raised to High.
 
-A safety layer then checks the water-quality conditions. If any important parameter falls into the **Poor** category, the final risk can be overridden to **High**.
+The system retains the initial machine learning prediction for comparison with the final risk assessment.
 
-This provides an additional safety check instead of relying only on the Machine Learning prediction.
+This approach adds an explicit safety check rather than relying exclusively on the classifier output.
 
----
+## 9. Model Performance
 
-## 7. Model Performance
+The following results summarize the reported model evaluation metrics.
 
-### YOLOv8 Validation Results
+### 9.1 YOLOv8 Validation Results
 
-| Metric    |     Result |
-| --------- | ---------: |
-| Precision | **94.87%** |
-| Recall    | **89.04%** |
-| F1-Score  | **91.86%** |
-| mAP@50    | **93.38%** |
-| mAP@50–95 | **66.67%** |
+| Metric | Result |
+|---|---:|
+| Precision | 94.87% |
+| Recall | 89.04% |
+| F1-Score | 91.86% |
+| mAP@50 | 93.38% |
+| mAP@50–95 | 66.67% |
 
-The YOLOv8 model achieved **94.87% precision**, exceeding the project's required **85% precision target**.
+The reported validation precision exceeded the project's 85% precision target.
 
-### YOLOv8 Test Results
+### 9.2 YOLOv8 Test Results
 
-| Metric    |     Result |
-| --------- | ---------: |
-| Precision | **96.70%** |
-| Recall    | **91.26%** |
-| F1-Score  | **93.90%** |
-| mAP@50    | **95.32%** |
-| mAP@50–95 | **68.82%** |
+| Metric | Result |
+|---|---:|
+| Precision | 96.70% |
+| Recall | 91.26% |
+| F1-Score | 93.90% |
+| mAP@50 | 95.32% |
+| mAP@50–95 | 68.82% |
 
-### Random Forest Results
+**Training and validation curves:**
 
-| Metric    |     Result |
-| --------- | ---------: |
-| Accuracy  | **99.00%** |
-| Precision | **99.03%** |
-| Recall    | **99.00%** |
-| F1-Score  | **99.00%** |
+![YOLOv8 Training and Validation Curves](screenshots/yolo-training-curves.png)
 
-The Random Forest model achieved **99% accuracy**, exceeding the project's required **85% accuracy target**.
+*Figure: YOLOv8 training and validation loss curves over 100 epochs.*
 
----
+**Confusion matrix:**
 
-## 8. Technology Stack
+![YOLOv8 Confusion Matrix](screenshots/yolo-confusion-matrix.png)
 
-### Frontend / Interface
+*Figure: YOLOv8 confusion matrix on the held-out test set.*
 
-* Streamlit
+### 9.3 Random Forest Results
 
-### Programming Language
+| Metric | Result |
+|---|---:|
+| Accuracy | 99.00% |
+| Precision | 99.03% |
+| Recall | 99.00% |
+| F1-Score | 99.00% |
 
-* Python
+**Confusion matrix:**
 
-### Computer Vision
+![Random Forest Confusion Matrix](screenshots/random-forest-confusion-matrix.png)
 
-* YOLOv8
-* Ultralytics
+## 10. Technology Stack
 
-### Machine Learning
+| Category | Technologies |
+|---|---|
+| Programming Language | Python |
+| Web Interface | Streamlit |
+| Object Detection | YOLOv8, Ultralytics |
+| Machine Learning | Random Forest, Scikit-learn |
+| Data Processing | NumPy, Pandas |
+| Image Processing | OpenCV, Pillow |
+| Model Serialization | Joblib |
+| Visualization | Matplotlib, Seaborn |
 
-* Random Forest
-* Scikit-learn
-
-### Data Processing
-
-* NumPy
-* Pandas
-
-### Visualization
-
-* Matplotlib
-
-### Image Processing
-
-* Pillow
-
----
-
-## 9. Project Structure
+## 11. Project Structure
 
 ```text
 MicroClear/
@@ -215,28 +307,75 @@ MicroClear/
 │       ├── confusion_matrix.csv
 │       └── confusion_matrix.png
 │
-└── ...
+└── screenshots/
+    ├── architecture.png
+    ├── sequence-diagram.png
+    ├── activity-diagram.png
+    ├── dfd-level-0.png
+    ├── dfd-level-1.png
+    ├── home-page.png
+    ├── analysis-dashboard.png
+    ├── risk-assessment.png
+    ├── recommendations.png
+    ├── detailed-report-top.png
+    ├── detailed-report-bottom.png
+    ├── faq-help.png
+    ├── about-page.png
+    ├── status-charts.png
+    ├── safety-override.png
+    ├── invalid-image-handling.png
+    ├── yolo-training-curves.png
+    ├── yolo-confusion-matrix.png
+    ├── random-forest-confusion-matrix.png
+    └── random-forest-metrics.png
 ```
 
----
+*The structure above illustrates the expected layout. Keep only files and directories that actually exist in your repository.*
 
-## 10. Installation
+## 12. Installation
 
-Clone the repository:
+### Prerequisites
+
+- Python installed on your computer.
+- Git installed on your computer.
+- The MicroClear source code repository.
+- The trained model files required by the application.
+
+### Step 1: Clone the Repository
 
 ```bash
-git clone hhttps://github.com/Engr-Usman-Ali/Final-Year-Project.git
+git clone https://github.com/Engr-Usman-Ali/Final-Year-Project.git
 ```
 
-Install the required Python packages:
+### Step 2: Open the Project Directory
 
 ```bash
-pip install -r requirements.txt
+cd Final-Year-Project
 ```
 
----
+### Step 3: Create a Virtual Environment
 
-## 11. Run the Application
+**Windows PowerShell:**
+
+```powershell
+python -m venv .venv
+```
+
+Activate it:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation, you can run the environment's Python executable directly instead.
+
+### Step 4: Install Dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+## 13. Run the Application
 
 Start the Streamlit application:
 
@@ -244,173 +383,78 @@ Start the Streamlit application:
 streamlit run app.py
 ```
 
-The application will open in the browser.
+Streamlit will provide a local URL in the terminal. Open that URL in your browser to access MicroClear.
+
+## 14. How to Use
+
+### Step 1: Upload a Microscope Image
+
+Upload a supported microscope image of the water sample.
+
+### Step 2: Detect Microplastics
+
+Run the detection process. YOLOv8 identifies particles and displays the detection results, including bounding boxes, particle count, and confidence scores.
+
+### Step 3: Enter Water-Quality Parameters
+
+Enter the measured values for:
+
+- pH
+- TDS
+- Turbidity
+
+The microplastic count is obtained automatically from the detection process.
+
+### Step 4: Analyze the Sample
+
+Run the risk assessment. The system combines the detected microplastic count and water-quality measurements to generate a machine learning prediction.
+
+### Step 5: Review the Results
+
+Review the final risk level, parameter classifications, model confidence, safety override status, and treatment recommendations.
+
+### Step 6: Review the Detailed Report
+
+Open the Detailed Report tab to examine the assessment information and supporting results.
+
+## 15. Expected Output
+
+MicroClear provides the following outputs after a successful assessment.
+
+### Risk Assessment
+
+- Final pollution risk level.
+- Initial machine learning prediction.
+- Model confidence.
+- Safety override status.
+
+### Water-Quality Summary
+
+- Measured pH.
+- TDS value in mg/L.
+- Turbidity in NTU.
+- Detected microplastic count.
+- Parameter classifications.
+
+### Recommendations
+
+- Suggested treatment approach.
+- Urgency information.
+- Recommended actions.
+- Treatment implementation steps.
+
+### Detailed Report
+
+The detailed report combines the model prediction, detection results, water-quality measurements, parameter classifications, and final safety decision.
+
+## Limitations
+
+MicroClear is an AI-assisted screening system. Its results depend on image quality, model training data, input measurements, and the defined assessment rules.
+
+The application does not replace laboratory confirmation of microplastic particles or certified drinking-water testing. Treatment recommendations should be evaluated against the actual contamination profile and applicable public-health guidance.
 
 ---
 
-## 12. How to Use
+**MicroClear — AI-Based Microplastic Pollution Risk Assessment and Mitigation System**
 
-### Step 1 — Upload Image
-
-Upload a clear microscope image of the water sample.
-
-### Step 2 — Run Detection
-
-Run the YOLOv8 detector.
-
-The system automatically displays:
-
-* Detected microplastic particles
-* Bounding boxes
-* Microplastic count
-* Detection confidence
-
-### Step 3 — Enter Water Parameters
-
-Enter:
-
-* pH
-* TDS
-* Turbidity
-
-The microplastic count does **not** need to be entered manually because it is obtained automatically from YOLOv8.
-
-### Step 4 — Analyze Risk
-
-The system sends the detected microplastic count and water-quality parameters to the Random Forest model.
-
-The rule-based safety layer then checks the conditions and produces the **final pollution risk level**.
-
----
-
-## 13. Expected Output
-
-After analyzing the microscope image and water-quality parameters, MicroClear provides a detailed assessment through the following sections:
-
-### 📋 Analysis Results
-
-The system displays the overall analysis results, including:
-
-* Final Risk Level
-* ML Predicted Risk
-* ML Confidence
-* Urgency Level
-* Recommended Treatment Method
-* Treatment Plan
-
-### 📊 Risk Assessment
-
-The system determines the final pollution risk level:
-
-```text
-LOW
-MEDIUM
-HIGH
-```
-
-It also displays the Machine Learning prediction and confidence, for example:
-
-```text
-Final Risk Level: MEDIUM
-ML Predicted: Medium
-ML Confidence: 98.5%
-```
-
-### 💡 Recommendations
-
-Based on the final risk level, MicroClear provides a recommended response, such as:
-
-* Urgency level
-* Recommended treatment method
-* Required action
-* Treatment plan
-* Implementation steps
-
-For example:
-
-```text
-Urgency Level:
-Install filtration within 1 week
-
-Treatment Method:
-Household Water Purifier with Carbon Filter
-
-Treatment Plan:
-FILTRATION RECOMMENDED
-```
-
-The system can also provide implementation steps such as filtration, microfiltration, regular water testing, and other appropriate treatment recommendations.
-
-### 📈 Detailed Report
-
-The detailed report provides complete information about the assessment.
-
-#### 🤖 ML Model Information
-
-The report includes:
-
-* Algorithm used
-* ML prediction
-* ML confidence
-* Rule-based assessment
-* Safety override status
-
-Example:
-
-```text
-Algorithm: Random Forest Classifier
-ML Prediction: Medium
-ML Confidence: 98.5%
-Rule-Based Assessment: Medium
-Safety Override Applied: No
-```
-
-#### 🖼️ Sample Image vs. Detection
-
-The system displays:
-
-* Original microscope image
-* YOLOv8 detection image
-* Detected microplastic particles
-* Microplastic count
-
-Example:
-
-```text
-YOLOv8 Detection: 1 particle found
-```
-
-#### 📋 Parameter Summary
-
-The system summarizes the measured parameters:
-
-| Parameter          |     Example Value |
-| ------------------ | ----------------: |
-| Microplastic Count | 1 particle/100 ml |
-| pH                 |               7.1 |
-| TDS                |        270.0 mg/L |
-| Turbidity          |           1.0 NTU |
-
-#### 📊 Parameter Categorization
-
-Each parameter is categorized according to the system's defined standards.
-
-| Parameter          |      Value | Category | Status |
-| ------------------ | ---------: | -------- | ------ |
-| pH                 |        7.1 | Good     | ✅      |
-| TDS                | 270.0 mg/L | Good     | ✅      |
-| Turbidity          |    1.0 NTU | Moderate | ⚠️     |
-| Microplastic Count | 1 particle | Moderate | ⚠️     |
-
-The report also shows the corresponding standard/reference range for each parameter.
-
-### 📚 Reference Standards
-
-The system provides the reference standards used for the water-quality assessment, including:
-
-* Pakistan Council of Research in Water Resources (PCRWR)
-* Environmental Protection Agency, Azad Jammu & Kashmir (EPA-AJK)
-* World Health Organization (WHO) Drinking Water Guidelines
-* Muslim Hands International WASH Program
-
-Overall, MicroClear provides both a **simple final risk level** and a **detailed technical report** containing the AI prediction, confidence, detected microplastics, water-quality parameters, parameter categories, safety decision, and recommended treatment actions.
+Developed as a Final Year Project in Software Engineering.
