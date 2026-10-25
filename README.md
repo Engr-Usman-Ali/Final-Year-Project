@@ -16,11 +16,10 @@ The system combines **YOLOv8 object detection, Random Forest classification, and
 - [Final Risk Decision](#8-final-risk-decision)
 - [Model Performance](#9-model-performance)
 - [Technology Stack](#10-technology-stack)
-- [Project Structure](#11-project-structure)
-- [Installation](#12-installation)
-- [Run the Application](#13-run-the-application)
-- [How to Use](#14-how-to-use)
-- [Expected Output](#15-expected-output)
+- [Installation](#11-installation)
+- [Run the Application](#12-run-the-application)
+- [How to Use](#13-how-to-use)
+- [Expected Output](#14-expected-output)
 
 ## 1. Project Overview
 
@@ -286,53 +285,7 @@ The reported validation precision exceeded the project's 85% precision target.
 | Model Serialization | Joblib |
 | Visualization | Matplotlib, Seaborn |
 
-## 11. Project Structure
-
-```text
-MicroClear/
-│
-├── app.py
-├── requirements.txt
-├── README.md
-│
-├── models/
-│   ├── microplastic_yolo.pt
-│   └── risk_model.pkl
-│
-├── datasets/
-│
-├── EVALUATION/
-│   └── result_randomforest/
-│       ├── performance_metrics.txt
-│       ├── confusion_matrix.csv
-│       └── confusion_matrix.png
-│
-└── screenshots/
-    ├── architecture.png
-    ├── sequence-diagram.png
-    ├── activity-diagram.png
-    ├── dfd-level-0.png
-    ├── dfd-level-1.png
-    ├── home-page.png
-    ├── analysis-dashboard.png
-    ├── risk-assessment.png
-    ├── recommendations.png
-    ├── detailed-report-top.png
-    ├── detailed-report-bottom.png
-    ├── faq-help.png
-    ├── about-page.png
-    ├── status-charts.png
-    ├── safety-override.png
-    ├── invalid-image-handling.png
-    ├── yolo-training-curves.png
-    ├── yolo-confusion-matrix.png
-    ├── random-forest-confusion-matrix.png
-    └── random-forest-metrics.png
-```
-
-*The structure above illustrates the expected layout. Keep only files and directories that actually exist in your repository.*
-
-## 12. Installation
+## 11. Installation
 
 ### Prerequisites
 
@@ -375,7 +328,7 @@ If PowerShell blocks activation, you can run the environment's Python executable
 python -m pip install -r requirements.txt
 ```
 
-## 13. Run the Application
+## 12. Run the Application
 
 Start the Streamlit application:
 
@@ -385,7 +338,7 @@ streamlit run app.py
 
 Streamlit will provide a local URL in the terminal. Open that URL in your browser to access MicroClear.
 
-## 14. How to Use
+## 13. How to Use
 
 ### Step 1: Upload a Microscope Image
 
@@ -417,7 +370,7 @@ Review the final risk level, parameter classifications, model confidence, safety
 
 Open the Detailed Report tab to examine the assessment information and supporting results.
 
-## 15. Expected Output
+## 14. Expected Output
 
 MicroClear provides the following outputs after a successful assessment.
 
