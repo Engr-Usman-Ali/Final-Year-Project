@@ -58,7 +58,7 @@ The MicroClear architecture connects image processing, object detection, water-q
 
 ![MicroClear High-Level Architecture](screenshots/architecture.png)
 
-<p align="center">Figure 5.1: High-level architecture of MicroClear</p>
+<p align="center">Figure: High-level architecture of MicroClear</p>
 
 ## 5. System Workflow
 
@@ -115,7 +115,7 @@ The home page introduces MicroClear and provides access to the water sample asse
 
 ![MicroClear Home Page](screenshots/home-page.png)
 
-<p align="center">Figure 6.2: Home page</p>
+<p align="center">Figure: Home page</p>
 
 ### 6.2 Analysis Dashboard
 
@@ -123,7 +123,7 @@ The Analysis Dashboard allows users to upload a microscope image, enter water-qu
 
 ![MicroClear Analysis Dashboard](screenshots/analysis-dashboard.png)
 
-<p align="center">Figure 6.3: Analysis Dashboard</p>
+<p align="center">Figure: Analysis Dashboard</p>
 
 ### 6.3 Risk Assessment
 
@@ -131,7 +131,7 @@ The Risk Assessment tab displays the final risk level, machine learning predicti
 
 ![Risk Assessment Results](screenshots/risk-assessment.png)
 
-<p align="center">Figure 6.4: Results Screen (Risk Assessment tab)</p>
+<p align="center">Figure: Results Screen (Risk Assessment tab)</p>
 
 ### 6.4 Treatment Recommendations
 
@@ -139,7 +139,7 @@ The Recommendations tab provides treatment suggestions and actions according to 
 
 ![Treatment Recommendations](screenshots/recommendations.png)
 
-<p align="center">Figure 6.5: Results Screen (Recommendations tab)</p>
+<p align="center">Figure: Results Screen (Recommendations tab)</p>
 
 ### 6.5 Detailed Assessment Report
 
@@ -149,13 +149,13 @@ The Detailed Report presents additional information about the prediction, detect
 
 ![Detailed Report Top](screenshots/detailed-report-top.png)
 
-<p align="center">Figure 6.6: Results Screen (Detailed Report tab, top half)</p>
+<p align="center">Figure: Results Screen (Detailed Report tab, top half)</p>
 
 **Additional report details:**
 
 ![Detailed Report Bottom](screenshots/detailed-report-bottom.png)
 
-<p align="center">Figure 6.7: Results Screen (Detailed Report tab, bottom half)</p>
+<p align="center">Figure: Results Screen (Detailed Report tab, bottom half)</p>
 
 ### 6.6 FAQ and Help
 
@@ -163,7 +163,7 @@ The FAQ and Help page provides information to help users understand and use the 
 
 ![FAQ and Help Page](screenshots/faq-help.png)
 
-<p align="center">Figure 6.8: Frequently Asked Questions and Help page</p>
+<p align="center">Figure: Frequently Asked Questions and Help page</p>
 
 ### 6.7 About Page
 
@@ -171,7 +171,7 @@ The About page presents information about the MicroClear project.
 
 ![About MicroClear](screenshots/about-page.png)
 
-<p align="center">Figure 6.9: About page</p>
+<p align="center">Figure: About page</p>
 
 ### 6.8 Safety Override
 
@@ -181,7 +181,7 @@ This feature adds an additional rule-based check before the final risk level is 
 
 ![Safety Override Example](screenshots/safety-override.png)
 
-<p align="center">Figure 7.1: Results Screen showing a safety override</p>
+<p align="center">Figure: Results Screen showing a safety override</p>
 
 ## 7. AI Models
 
@@ -268,19 +268,19 @@ The reported validation precision exceeded the project's 85% precision target.
 
 ![YOLOv8 Training and Validation Curves](screenshots/yolo-training-curves.png)
 
-<p align="center">Figure 7.3: YOLOv8 training and validation loss curves over 100 epochs</p>
+<p align="center">Figure: YOLOv8 training and validation loss curves over 100 epochs</p>
 
 ### 9.4 YOLOv8 Confusion Matrix
 
 ![YOLOv8 Confusion Matrix](screenshots/yolo-confusion-matrix.png)
 
-<p align="center">Figure 7.4: YOLOv8 confusion matrix on the held-out test set</p>
+<p align="center">Figure: YOLOv8 confusion matrix on the held-out test set</p>
 
 ### 9.5 Random Forest Confusion Matrix
 
 ![Random Forest Confusion Matrix](screenshots/random-forest-confusion-matrix.png)
 
-<p align="center">Figure 7.5: Random Forest confusion matrix on the held-out test set</p>
+<p align="center">Figure: Random Forest confusion matrix on the held-out test set</p>
 
 
 ## 10. Technology Stack
